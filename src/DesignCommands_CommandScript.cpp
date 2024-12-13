@@ -18,12 +18,85 @@
 
 #include "Cell.h"
 #include "Chat.h"
+#include "ScriptMgr.h"
 #include "CommandScript.h"
 #include "Opcodes.h"
 #include "Player.h"
 
+#include <vector>
+#include <cstdio>
+#include <iostream>
+#include <fstream>
+
 using namespace Acore::ChatCommands;
 using namespace std;
+
+class OutputFile
+{
+public:
+    void WriteLines(string fileName, vector<string> textRows)
+    {
+        ofstream outputFile(fileName.c_str());
+        for (string text : textRows)
+        {
+            outputFile << text;
+            outputFile << "\n";
+        }
+        outputFile.close();
+    }
+};
+
+string ConvertNumberToString(uint32 number)
+{
+    stringstream stringStreamOutput;
+    stringStreamOutput << number;
+    return stringStreamOutput.str();
+}
+
+class CreatureReference
+{
+public:
+    Creature* CreaturePtr;
+    uint32 MapID;
+    uint32 Entry;
+    string Name;
+    string SubName;    
+};
+
+static std::list<CreatureReference> creatureReferences;
+
+class DesignCommands_AllCreatureScripts : public AllCreatureScript
+{
+public:
+    DesignCommands_AllCreatureScripts()
+        : AllCreatureScript("DesignCommands_AllCreatureScripts")
+    {
+    }
+
+    void OnCreatureAddWorld(Creature* creature) override
+    {
+        Map* curMap = creature->GetMap();
+
+        CreatureReference creatureReference;
+        creatureReference.MapID = creature->GetMapId();
+        creatureReference.Entry = creature->GetEntry();
+        creatureReference.Name = creature->GetName();
+        creatureReference.SubName = creature->GetCreatureTemplate()->SubName;
+        creatureReference.CreaturePtr = creature;
+        creatureReferences.push_back(creatureReference);
+    }
+};
+
+class DesignCommandsPlayerScript : public PlayerScript
+{
+public:
+    DesignCommandsPlayerScript() : PlayerScript("DesignCommandsPlayerScript") {}
+
+    void OnMapChanged(Player* /*player*/) override
+    {
+
+    }
+};
 
 static std::string RoundVal(float value, int places)
 {
@@ -97,15 +170,17 @@ public:
     {
         static ChatCommandTable designCommandTable =
         {
-            { "dgps",              HandleDGPSCommand,                   SEC_MODERATOR,          Console::No  },
-            { "zlcapture",         HandleZoneLineCaptureCommand,        SEC_MODERATOR,          Console::No  },
-            { "zlwrite",           HandleZoneLineWriteCommand,          SEC_MODERATOR,          Console::No  },
-            { "zlstephigh",        HandleZoneLineStepHighCommand,       SEC_MODERATOR,          Console::No  },
-            { "zlsteplow",         HandleZoneLineStepLowCommand,        SEC_MODERATOR,          Console::No  },
-            { "zlclear",           HandleZoneLineClearCommand,          SEC_MODERATOR,          Console::No  },
-            { "lpcapture",         HandleLiquidPlaneNodeCaptureCommand, SEC_MODERATOR,          Console::No  },
-            { "lpwrite",           HandleLiquidPlaneWriteCommand,       SEC_MODERATOR,          Console::No  },
-            { "lpclear",           HandleLiquidPlaneClearCommand,       SEC_MODERATOR,          Console::No  },
+            { "dgps",                   HandleDGPSCommand,                   SEC_MODERATOR,          Console::No  },
+            { "zlcapture",              HandleZoneLineCaptureCommand,        SEC_MODERATOR,          Console::No  },
+            { "zlwrite",                HandleZoneLineWriteCommand,          SEC_MODERATOR,          Console::No  },
+            { "zlstephigh",             HandleZoneLineStepHighCommand,       SEC_MODERATOR,          Console::No  },
+            { "zlsteplow",              HandleZoneLineStepLowCommand,        SEC_MODERATOR,          Console::No  },
+            { "zlclear",                HandleZoneLineClearCommand,          SEC_MODERATOR,          Console::No  },
+            { "lpcapture",              HandleLiquidPlaneNodeCaptureCommand, SEC_MODERATOR,          Console::No  },
+            { "lpwrite",                HandleLiquidPlaneWriteCommand,       SEC_MODERATOR,          Console::No  },
+            { "lpclear",                HandleLiquidPlaneClearCommand,       SEC_MODERATOR,          Console::No  },
+            { "zonecreatureswrite",     HandleWriteZoneCreatures,            SEC_MODERATOR,          Console::No  },
+            { "zonecreaturescount",     HandleCountZoneCreatures,            SEC_MODERATOR,          Console::No  },
         };
 
         return designCommandTable;
@@ -117,6 +192,50 @@ public:
         stream << RoundVal(valueX, 6) << "f, " << RoundVal(valueY, 6) << "f, " << RoundVal(valueZ, 6) << "f";
         return stream.str();
     }
+
+    static bool HandleCountZoneCreatures(ChatHandler* handler, Optional<PlayerIdentifier> target)
+    {
+        Player* player = handler->GetSession()->GetPlayer();
+        uint32 mapID = player->GetMapId();
+
+        int count = 0;
+        LOG_INFO("server.loading", "= Counting Creatures ===================================");
+        for (auto& creatureReference : creatureReferences)
+        {
+            if (player->GetMapId() == creatureReference.MapID)
+                count++;
+        }
+        LOG_INFO("server.loading", "Zone Creature Count: {}", count);
+
+        return true;
+    }
+
+    static bool HandleWriteZoneCreatures(ChatHandler* handler, Optional<PlayerIdentifier> target)
+    {
+        Player* player = handler->GetSession()->GetPlayer();
+        uint32 mapID = player->GetMapId();
+       
+        LOG_INFO("server.loading", "= Writing Creature Data ===========================================");
+        vector<string> outputLines;
+        for (auto& creatureReference : creatureReferences)
+        {
+            if (player->GetMapId() == creatureReference.MapID)
+            {
+                string outputLine;
+                outputLine += creatureReference.Name + "," + creatureReference.SubName + ",";
+                outputLine += RoundVal(creatureReference.CreaturePtr->GetPositionZ(), 6) + ",";
+                outputLines.push_back(outputLine);
+                LOG_INFO("server.loading", outputLine);
+            }
+        }
+        OutputFile outputFile;
+        string fileName = ConvertNumberToString(mapID) + ".txt";
+        outputFile.WriteLines(fileName, outputLines);
+        LOG_INFO("server.loading", "Done writing creatures");
+
+        return true;
+    }
+
 
     static bool HandleDGPSCommand(ChatHandler* handler, Optional<PlayerIdentifier> target)
     {
@@ -576,3 +695,14 @@ void AddDesignCommandsCommandScripts()
 {
     new DesignCommands_CommandScript();
 }
+
+void AddDesignCommandsAllCreatureScripts()
+{
+    new DesignCommands_AllCreatureScripts();
+}
+
+void AddDesignCommandsPlayerScript()
+{
+    new DesignCommandsPlayerScript();
+}
+
