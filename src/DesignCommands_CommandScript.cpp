@@ -64,6 +64,7 @@ public:
 };
 
 static std::list<CreatureReference> creatureReferences;
+static bool AllCreaturesFall = false;
 
 class DesignCommands_AllCreatureScripts : public AllCreatureScript
 {
@@ -84,6 +85,9 @@ public:
         creatureReference.SubName = creature->GetCreatureTemplate()->SubName;
         creatureReference.CreaturePtr = creature;
         creatureReferences.push_back(creatureReference);
+
+        if (AllCreaturesFall == true)
+            creature->GetMotionMaster()->MoveFall();
     }
 };
 
@@ -181,6 +185,7 @@ public:
             { "lpclear",                HandleLiquidPlaneClearCommand,       SEC_MODERATOR,          Console::No  },
             { "zonecreatureswrite",     HandleWriteZoneCreatures,            SEC_MODERATOR,          Console::No  },
             { "zonecreaturescount",     HandleCountZoneCreatures,            SEC_MODERATOR,          Console::No  },
+            { "allcreaturefall",        HandleAllCreatureFall,             SEC_MODERATOR,          Console::No  },
         };
 
         return designCommandTable;
@@ -191,6 +196,18 @@ public:
         std::ostringstream stream;
         stream << RoundVal(valueX, 6) << "f, " << RoundVal(valueY, 6) << "f, " << RoundVal(valueZ, 6) << "f";
         return stream.str();
+    }
+
+    static bool HandleAllCreatureFall(ChatHandler* handler, Optional<PlayerIdentifier> target)
+    {
+        Player* player = handler->GetSession()->GetPlayer();
+        if (AllCreaturesFall == false)
+            for (auto& creatureReference : creatureReferences)
+                if (creatureReference.CreaturePtr != nullptr)
+                    if (player->GetMapId() == creatureReference.MapID)
+                        creatureReference.CreaturePtr->GetMotionMaster()->MoveFall();
+        AllCreaturesFall = !AllCreaturesFall;
+        LOG_INFO("server.loading", "= All Creature Fall Toggle {} ===========================================", AllCreaturesFall);
     }
 
     static bool HandleCountZoneCreatures(ChatHandler* handler, Optional<PlayerIdentifier> target)
