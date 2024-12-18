@@ -208,6 +208,7 @@ public:
                         creatureReference.CreaturePtr->GetMotionMaster()->MoveFall();
         AllCreaturesFall = !AllCreaturesFall;
         LOG_INFO("server.loading", "= All Creature Fall Toggle {} ===========================================", AllCreaturesFall);
+        return true;
     }
 
     static bool HandleCountZoneCreatures(ChatHandler* handler, Optional<PlayerIdentifier> target)
