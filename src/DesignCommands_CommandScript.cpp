@@ -22,6 +22,7 @@
 #include "CommandScript.h"
 #include "Opcodes.h"
 #include "Player.h"
+#include "DetourNavMeshQuery.h"
 
 #include <vector>
 #include <cstdio>
@@ -30,6 +31,8 @@
 
 using namespace Acore::ChatCommands;
 using namespace std;
+
+static float WorldScale = 0.29f;
 
 class OutputFile
 {
@@ -87,7 +90,33 @@ public:
         creatureReferences.push_back(creatureReference);
 
         if (AllCreaturesFall == true)
-            creature->GetMotionMaster()->MoveFall();
+        {
+            float outHeight = curMap->GetHeight(creature->GetPositionX(), creature->GetPositionY(), creature->GetPositionZ(), true, 150);
+            LOG_INFO("server.loading", "Creature: {}, Height: {}", creatureReference.Name + "," + creatureReference.SubName, outHeight);
+           
+            //if (creature->isSwimming() == false)
+            //    creature->SetPosition(creature->GetPositionX(), creature->GetPositionY(), creature->GetPositionZ() + 1, creature->GetOrientation());
+
+            bool isObjectInMap = false;
+            int maxStepUps = 10;
+            int curStep = 0;
+            while (isObjectInMap == false && curStep < maxStepUps)
+            {
+                float height = curMap->GetHeight(creature->GetPositionX(), creature->GetPositionY(), creature->GetPositionZ(), true, 150);
+                if (height < -10000)
+                {
+                    creature->SetPosition(creature->GetPositionX(), creature->GetPositionY(), creature->GetPositionZ() + 2.5 * curStep, creature->GetOrientation());
+                }
+                else
+                    isObjectInMap = true;
+                curStep++;
+            }
+
+            if (creature->isSwimming() == false)
+                creature->GetMotionMaster()->MoveFall();
+
+            
+        }
     }
 };
 
@@ -185,10 +214,34 @@ public:
             { "lpclear",                HandleLiquidPlaneClearCommand,       SEC_MODERATOR,          Console::No  },
             { "zonecreatureswrite",     HandleWriteZoneCreatures,            SEC_MODERATOR,          Console::No  },
             { "zonecreaturescount",     HandleCountZoneCreatures,            SEC_MODERATOR,          Console::No  },
-            { "allcreaturefall",        HandleAllCreatureFall,             SEC_MODERATOR,          Console::No  },
+            { "allcreaturefall",        HandleAllCreatureFall,               SEC_MODERATOR,          Console::No  },
+            { "npcdown",                HandleNPCDown,                       SEC_MODERATOR,          Console::No  },
+            { "npcup",                  HandleNPCUp,                         SEC_MODERATOR,          Console::No  },
         };
 
         return designCommandTable;
+    }
+
+    static bool HandleNPCUp(ChatHandler* handler, Optional<PlayerIdentifier> target)
+    {
+        Creature* creature = handler->getSelectedCreature();
+        if (creature != nullptr)
+        {
+            creature->SetPosition(creature->GetPositionX(), creature->GetPositionY(), creature->GetPositionZ() + 2, creature->GetOrientation());
+            creature->GetMotionMaster()->MoveFall();
+        }
+        return true;
+    }
+
+    static bool HandleNPCDown(ChatHandler* handler, Optional<PlayerIdentifier> target)
+    {
+        Creature* creature = handler->getSelectedCreature();
+        if (creature != nullptr)
+        {
+            creature->SetPosition(creature->GetPositionX(), creature->GetPositionY(), creature->GetPositionZ() - 2, creature->GetOrientation());
+            creature->GetMotionMaster()->MoveFall();
+        }
+        return true;
     }
 
     static std::string RoundVals(float valueX, float valueY, float valueZ, int places)
@@ -241,7 +294,7 @@ public:
             {
                 string outputLine;
                 outputLine += creatureReference.Name + "," + creatureReference.SubName + ",";
-                outputLine += RoundVal(creatureReference.CreaturePtr->GetPositionZ(), 6) + ",";
+                outputLine += RoundVal(creatureReference.CreaturePtr->GetPositionZ() / WorldScale, 6) + ",";
                 outputLines.push_back(outputLine);
                 LOG_INFO("server.loading", outputLine);
             }
