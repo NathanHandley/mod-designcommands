@@ -227,7 +227,7 @@ public:
         Creature* creature = handler->getSelectedCreature();
         if (creature != nullptr)
         {
-            creature->SetPosition(creature->GetPositionX(), creature->GetPositionY(), creature->GetPositionZ() + 2, creature->GetOrientation());
+            creature->SetPosition(creature->GetPositionX(), creature->GetPositionY(), creature->GetPositionZ() + 3, creature->GetOrientation());
             creature->GetMotionMaster()->MoveFall();
         }
         return true;
@@ -238,7 +238,7 @@ public:
         Creature* creature = handler->getSelectedCreature();
         if (creature != nullptr)
         {
-            creature->SetPosition(creature->GetPositionX(), creature->GetPositionY(), creature->GetPositionZ() - 2, creature->GetOrientation());
+            creature->SetPosition(creature->GetPositionX(), creature->GetPositionY(), creature->GetPositionZ() - 3, creature->GetOrientation());
             creature->GetMotionMaster()->MoveFall();
         }
         return true;
