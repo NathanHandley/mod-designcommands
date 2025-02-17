@@ -125,7 +125,7 @@ class DesignCommandsPlayerScript : public PlayerScript
 public:
     DesignCommandsPlayerScript() : PlayerScript("DesignCommandsPlayerScript") {}
 
-    void OnMapChanged(Player* /*player*/) override
+    void OnPlayerMapChanged(Player* /*player*/) override
     {
 
     }
@@ -332,13 +332,17 @@ public:
             return false;
         }
               
-        handler->PSendSysMessage("Real: {}f, {}f, {}f", RoundVal(object->GetPositionX(), 6), RoundVal(object->GetPositionY(), 6), RoundVal(object->GetPositionZ(), 6));
+        handler->PSendSysMessage("Real: {}f, {}f, {}f", RoundVal(object->GetPositionX(), 6), RoundVal(object->GetPositionY(), 6), RoundVal(object->GetPositionZ(), 6),
+            RoundVal(object->GetPositionX() / WorldScale, 6), RoundVal(object->GetPositionY() / WorldScale, 6), RoundVal(object->GetPositionZ() / WorldScale, 6));
         handler->PSendSysMessage("High: {}f, {}f, {}f", RoundVal(object->GetPositionX() + 0.5f, 6), RoundVal(object->GetPositionY() + 0.5f, 6), RoundVal(object->GetPositionZ() + 0.5f, 6));
-        handler->PSendSysMessage("Low: {}f, {}f, {}f", RoundVal(object->GetPositionX() - 0.5f, 6), RoundVal(object->GetPositionY() - 0.5f, 6), RoundVal(object->GetPositionZ() - 0.5f, 6), object->GetOrientation());
+        handler->PSendSysMessage("Low: {}f, {}f, {}f", RoundVal(object->GetPositionX() - 0.5f, 6), RoundVal(object->GetPositionY() - 0.5f, 6), RoundVal(object->GetPositionZ() - 0.5f, 6));
 
-        LOG_INFO("server.loading", "Real: {}f, {}f, {}f", RoundVal(object->GetPositionX(), 6), RoundVal(object->GetPositionY(), 6), RoundVal(object->GetPositionZ(), 6));
-        LOG_INFO("server.loading", "High: {}f, {}f, {}f", RoundVal(object->GetPositionX() + 0.5f, 6), RoundVal(object->GetPositionY() + 0.5f, 6), RoundVal(object->GetPositionZ() + 0.5f, 6));
-        LOG_INFO("server.loading", "Low: {}f, {}f, {}f", RoundVal(object->GetPositionX() - 0.5f, 6), RoundVal(object->GetPositionY() - 0.5f, 6), RoundVal(object->GetPositionZ() - 0.5f, 6), object->GetOrientation());
+        LOG_INFO("server.loading", "Real: {}f, {}f, {}f - Scaled: {}f, {}f, {}f", RoundVal(object->GetPositionX(), 6), RoundVal(object->GetPositionY(), 6), RoundVal(object->GetPositionZ(), 6),
+            RoundVal(object->GetPositionX() / WorldScale, 6), RoundVal(object->GetPositionY() / WorldScale, 6), RoundVal(object->GetPositionZ() / WorldScale, 6));
+        LOG_INFO("server.loading", "High: {}f, {}f, {}f - Scaled: {}f, {}f, {}f", RoundVal(object->GetPositionX() + 0.5f, 6), RoundVal(object->GetPositionY() + 0.5f, 6), RoundVal(object->GetPositionZ() + 0.5f, 6),
+            RoundVal((object->GetPositionX() / WorldScale) + 0.5f, 6), RoundVal((object->GetPositionY() / WorldScale) + 0.5f, 6), RoundVal((object->GetPositionZ() / WorldScale) + 0.5f, 6));
+        LOG_INFO("server.loading", "Low: {}f, {}f, {}f - Scaled: {}f, {}f, {}f", RoundVal(object->GetPositionX() - 0.5f, 6), RoundVal(object->GetPositionY() - 0.5f, 6), RoundVal(object->GetPositionZ() - 0.5f, 6),
+            RoundVal((object->GetPositionX() / WorldScale) - 0.5f, 6), RoundVal((object->GetPositionY() / WorldScale) - 0.5f, 6), RoundVal((object->GetPositionZ() / WorldScale) - 0.5f, 6));
 
         return true;
     }
