@@ -204,6 +204,7 @@ public:
         static ChatCommandTable designCommandTable =
         {
             { "dgps",                   HandleDGPSCommand,                   SEC_MODERATOR,          Console::No  },
+            { "sgps",                   HandleSGPSCommand,                   SEC_MODERATOR,          Console::No  },
             { "zlcapture",              HandleZoneLineCaptureCommand,        SEC_MODERATOR,          Console::No  },
             { "zlwrite",                HandleZoneLineWriteCommand,          SEC_MODERATOR,          Console::No  },
             { "zlstephigh",             HandleZoneLineStepHighCommand,       SEC_MODERATOR,          Console::No  },
@@ -307,7 +308,6 @@ public:
         return true;
     }
 
-
     static bool HandleDGPSCommand(ChatHandler* handler, Optional<PlayerIdentifier> target)
     {
         if (!target)
@@ -331,22 +331,58 @@ public:
         {
             return false;
         }
-              
-        handler->PSendSysMessage("Real: {}f, {}f, {}f - Unscaled: {}f, {}f, {}f", RoundVal(object->GetPositionX(), 6), RoundVal(object->GetPositionY(), 6), RoundVal(object->GetPositionZ(), 6), 
-            RoundVal(object->GetPositionX() / WorldScale, 6), RoundVal(object->GetPositionY() / WorldScale, 6), RoundVal(object->GetPositionZ() / WorldScale, 6));
-        handler->PSendSysMessage("High: {}f, {}f, {}f - Unscaled: {}f, {}f, {}f", RoundVal(object->GetPositionX() + 0.5f, 6), RoundVal(object->GetPositionY() + 0.5f, 6), RoundVal(object->GetPositionZ() + 0.5f, 6),
-            RoundVal((object->GetPositionX() / WorldScale) + 0.5f, 6), RoundVal((object->GetPositionY() / WorldScale) + 0.5f, 6), RoundVal((object->GetPositionZ() / WorldScale) + 0.5f, 6));
-        handler->PSendSysMessage("Low: {}f, {}f, {}f - Unscaled: {}f, {}f, {}f", RoundVal(object->GetPositionX() - 0.5f, 6), RoundVal(object->GetPositionY() - 0.5f, 6), RoundVal(object->GetPositionZ() - 0.5f, 6),
-            RoundVal((object->GetPositionX() / WorldScale) - 0.5f, 6), RoundVal((object->GetPositionY() / WorldScale) - 0.5f, 6), RoundVal((object->GetPositionZ() / WorldScale) - 0.5f, 6));
-        handler->PSendSysMessage("Orientation: {}f", RoundVal(object->GetOrientation(), 6));
+        //      
+        //handler->PSendSysMessage("Real: {}f, {}f, {}f - Unscaled: {}f, {}f, {}f", RoundVal(object->GetPositionX(), 6), RoundVal(object->GetPositionY(), 6), RoundVal(object->GetPositionZ(), 6), 
+        //    RoundVal(object->GetPositionX() / WorldScale, 6), RoundVal(object->GetPositionY() / WorldScale, 6), RoundVal(object->GetPositionZ() / WorldScale, 6));
+        //handler->PSendSysMessage("High: {}f, {}f, {}f - Unscaled: {}f, {}f, {}f", RoundVal(object->GetPositionX() + 0.5f, 6), RoundVal(object->GetPositionY() + 0.5f, 6), RoundVal(object->GetPositionZ() + 0.5f, 6),
+        //    RoundVal((object->GetPositionX() / WorldScale) + 0.5f, 6), RoundVal((object->GetPositionY() / WorldScale) + 0.5f, 6), RoundVal((object->GetPositionZ() / WorldScale) + 0.5f, 6));
+        //handler->PSendSysMessage("Low: {}f, {}f, {}f - Unscaled: {}f, {}f, {}f", RoundVal(object->GetPositionX() - 0.5f, 6), RoundVal(object->GetPositionY() - 0.5f, 6), RoundVal(object->GetPositionZ() - 0.5f, 6),
+        //    RoundVal((object->GetPositionX() / WorldScale) - 0.5f, 6), RoundVal((object->GetPositionY() / WorldScale) - 0.5f, 6), RoundVal((object->GetPositionZ() / WorldScale) - 0.5f, 6));
+        //handler->PSendSysMessage("Orientation: {}f", RoundVal(object->GetOrientation(), 6));
 
-        LOG_INFO("server.loading", "Real: {}f, {}f, {}f - Unscaled: {}f, {}f, {}f", RoundVal(object->GetPositionX(), 6), RoundVal(object->GetPositionY(), 6), RoundVal(object->GetPositionZ(), 6), 
-            RoundVal(object->GetPositionX() / WorldScale, 6), RoundVal(object->GetPositionY() / WorldScale, 6), RoundVal(object->GetPositionZ() / WorldScale, 6));
-        LOG_INFO("server.loading", "High: {}f, {}f, {}f - Unscaled: {}f, {}f, {}f", RoundVal(object->GetPositionX() + 0.5f, 6), RoundVal(object->GetPositionY() + 0.5f, 6), RoundVal(object->GetPositionZ() + 0.5f, 6),
-            RoundVal((object->GetPositionX() / WorldScale) + 0.5f, 6), RoundVal((object->GetPositionY() / WorldScale) + 0.5f, 6), RoundVal((object->GetPositionZ() / WorldScale) + 0.5f, 6));
-        LOG_INFO("server.loading", "Low: {}f, {}f, {}f - Unscaled: {}f, {}f, {}f", RoundVal(object->GetPositionX() - 0.5f, 6), RoundVal(object->GetPositionY() - 0.5f, 6), RoundVal(object->GetPositionZ() - 0.5f, 6),
-            RoundVal((object->GetPositionX() / WorldScale) - 0.5f, 6), RoundVal((object->GetPositionY() / WorldScale) - 0.5f, 6), RoundVal((object->GetPositionZ() / WorldScale) - 0.5f, 6));
-        LOG_INFO("server.loading", "Orientation: {}f", RoundVal(object->GetOrientation(), 6));
+        //LOG_INFO("server.loading", "Real: {}f, {}f, {}f - Unscaled: {}f, {}f, {}f", RoundVal(object->GetPositionX(), 6), RoundVal(object->GetPositionY(), 6), RoundVal(object->GetPositionZ(), 6), 
+        //    RoundVal(object->GetPositionX() / WorldScale, 6), RoundVal(object->GetPositionY() / WorldScale, 6), RoundVal(object->GetPositionZ() / WorldScale, 6));
+        //LOG_INFO("server.loading", "High: {}f, {}f, {}f - Unscaled: {}f, {}f, {}f", RoundVal(object->GetPositionX() + 0.5f, 6), RoundVal(object->GetPositionY() + 0.5f, 6), RoundVal(object->GetPositionZ() + 0.5f, 6),
+        //    RoundVal((object->GetPositionX() / WorldScale) + 0.5f, 6), RoundVal((object->GetPositionY() / WorldScale) + 0.5f, 6), RoundVal((object->GetPositionZ() / WorldScale) + 0.5f, 6));
+        //LOG_INFO("server.loading", "Low: {}f, {}f, {}f - Unscaled: {}f, {}f, {}f", RoundVal(object->GetPositionX() - 0.5f, 6), RoundVal(object->GetPositionY() - 0.5f, 6), RoundVal(object->GetPositionZ() - 0.5f, 6),
+        //    RoundVal((object->GetPositionX() / WorldScale) - 0.5f, 6), RoundVal((object->GetPositionY() / WorldScale) - 0.5f, 6), RoundVal((object->GetPositionZ() / WorldScale) - 0.5f, 6));
+        //LOG_INFO("server.loading", "Orientation: {}f", RoundVal(object->GetOrientation(), 6));
+
+        static string priorText;
+        bool clearAfter = true;
+        if (priorText.size() == 0)
+            clearAfter = false;
+        else
+            priorText.append("|");
+        priorText.append(fmt::format("{}|{}|{}|{} scale:{}", RoundVal(object->GetPositionX() / WorldScale, 6), RoundVal(object->GetPositionY() / WorldScale, 6), RoundVal(object->GetPositionZ() / WorldScale, 6), RoundVal(object->GetOrientation(), 6), WorldScale));
+        handler->PSendSysMessage(priorText);
+        LOG_INFO("server.loading", priorText);
+        if (clearAfter == true)
+            priorText.clear();
+
+        return true;
+    }
+
+    static bool HandleSGPSCommand(ChatHandler* handler, Optional<PlayerIdentifier> target)
+    {
+        if (!target)
+        {
+            target = PlayerIdentifier::FromTargetOrSelf(handler);
+        }
+
+        WorldObject* object = handler->getSelectedUnit();
+
+        if (!object || !target)
+        {
+            return false;
+        }
+
+        Player* player = handler->GetSession()->GetPlayer();
+        Creature* creature = handler->getSelectedCreature();
+
+        string text = fmt::format("{}|{}|{}|{}", creature->GetSpawnId(), RoundVal(player->GetPositionX() / WorldScale, 6), RoundVal(player->GetPositionY() / WorldScale, 6), RoundVal(player->GetPositionZ() / WorldScale, 6));
+        handler->PSendSysMessage(text);
+        LOG_INFO("server.loading", text);
 
         return true;
     }
