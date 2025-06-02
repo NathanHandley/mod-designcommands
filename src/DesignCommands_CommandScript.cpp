@@ -23,11 +23,15 @@
 #include "Opcodes.h"
 #include "Player.h"
 #include "DetourNavMeshQuery.h"
+#include "MapMgr.h"
 
 #include <vector>
 #include <cstdio>
 #include <iostream>
 #include <fstream>
+
+#include "boost/algorithm/string.hpp"
+#include <regex>
 
 using namespace Acore::ChatCommands;
 using namespace std;
@@ -205,6 +209,7 @@ public:
         {
             { "dgps",                   HandleDGPSCommand,                   SEC_MODERATOR,          Console::No  },
             { "sgps",                   HandleSGPSCommand,                   SEC_MODERATOR,          Console::No  },
+            { "eqxyz",                  HandleEQXYZCommand,                  SEC_MODERATOR,          Console::No  },
             { "zlcapture",              HandleZoneLineCaptureCommand,        SEC_MODERATOR,          Console::No  },
             { "zlwrite",                HandleZoneLineWriteCommand,          SEC_MODERATOR,          Console::No  },
             { "zlstephigh",             HandleZoneLineStepHighCommand,       SEC_MODERATOR,          Console::No  },
@@ -221,6 +226,100 @@ public:
         };
 
         return designCommandTable;
+    }
+
+    // Copy and paste from the AzerothCore go XYZ method, mostly
+    static bool HandleEQXYZCommand(ChatHandler* handler, Tail args)
+    {
+        std::wstring wInputCoords;
+        if (!Utf8toWStr(args, wInputCoords))
+        {
+            return false;
+        }
+
+        // extract float and integer values from the input
+        std::vector<float> locationValues;
+        std::wregex floatRegex(L"(-?\\d+(?:\\.\\d+)?)");
+        std::wsregex_iterator floatRegexIterator(wInputCoords.begin(), wInputCoords.end(), floatRegex);
+        std::wsregex_iterator end;
+        while (floatRegexIterator != end)
+        {
+            std::wsmatch match = *floatRegexIterator;
+            std::wstring matchStr = match.str();
+
+            // try to convert the match to a float
+            try
+            {
+                locationValues.push_back(std::stof(matchStr));
+            }
+            // if the match is not a float, do not add it to the vector
+            catch (std::invalid_argument const&) {}
+
+            ++floatRegexIterator;
+        }
+
+        // X and Y are required
+        if (locationValues.size() < 2)
+        {
+            return false;
+        }
+
+        Player* player = handler->GetSession()->GetPlayer();
+
+        uint32 mapId = locationValues.size() >= 4 ? uint32(locationValues[3]) : player->GetMapId();
+
+        float x = locationValues[0];
+        float y = locationValues[1];
+
+        if (!sMapStore.LookupEntry(mapId) || !MapMgr::IsValidMapCoord(mapId, x, y))
+        {
+            handler->SendErrorMessage(LANG_INVALID_TARGET_COORD, x, y, mapId);
+            return false;
+        }
+
+        Map const* map = sMapMgr->CreateBaseMap(mapId);
+
+        float z = locationValues.size() >= 3 ? locationValues[2] : std::max(map->GetHeight(x, y, MAX_HEIGHT), map->GetWaterLevel(x, y));
+        // map ID (locationValues[3]) already handled above
+        float o = locationValues.size() >= 5 ? locationValues[4] : player->GetOrientation();
+
+        // Scale the values
+        x *= WorldScale;
+        y *= WorldScale;
+        z *= WorldScale;
+
+        if (!MapMgr::IsValidMapCoord(mapId, x, y, z, o))
+        {
+            handler->SendErrorMessage(LANG_INVALID_TARGET_COORD, x, y, mapId);
+            return false;
+        }
+
+        return DoTeleport(handler, { x, y, z, o }, mapId);
+    }
+    static bool DoTeleport(ChatHandler* handler, Position pos, uint32 mapId = MAPID_INVALID)
+    {
+        Player* player = handler->GetSession()->GetPlayer();
+
+        if (mapId == MAPID_INVALID)
+            mapId = player->GetMapId();
+        if (!MapMgr::IsValidMapCoord(mapId, pos) || sObjectMgr->IsTransportMap(mapId))
+        {
+            handler->SendErrorMessage(LANG_INVALID_TARGET_COORD, pos.GetPositionX(), pos.GetPositionY(), mapId);
+            return false;
+        }
+
+        // stop flight if need
+        if (player->IsInFlight())
+        {
+            player->GetMotionMaster()->MovementExpired();
+            player->CleanupAfterTaxiFlight();
+        }
+        // save only in non-flight case
+        else
+            player->SaveRecallPosition();
+
+        player->TeleportTo({ mapId, pos });
+        return true;
     }
 
     static bool HandleNPCUp(ChatHandler* handler, Optional<PlayerIdentifier> target)
